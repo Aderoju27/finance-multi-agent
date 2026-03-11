@@ -177,6 +177,8 @@ def main():
         st.session_state.conversation_active = False
     if "current_turn" not in st.session_state:
         st.session_state.current_turn = 0
+    if "conversation_mode" not in st.session_state:
+        st.session_state.conversation_mode = "🔄 Automatic"
     
     # Header
     st.title("💼 Multi-Agent Financial Advisory System")
@@ -228,6 +230,15 @@ def main():
         st.subheader("Settings")
         max_turns = st.slider("Max Turns", 1, 10, 5)
         
+        # Conversation Mode
+        st.subheader("Conversation Mode")
+        conversation_mode = st.radio(
+            "Mode",
+            ["🔄 Automatic", "👆 Step-by-Step"],
+            index=0,
+            help="Automatic runs the full conversation. Step-by-Step lets you control each turn."
+        )
+        
         st.divider()
         
         # Start/Reset buttons
@@ -272,6 +283,7 @@ def main():
             st.session_state.conversation_active = True
             st.session_state.current_turn = 0
             st.session_state.conversation = []
+            st.session_state.conversation_mode = conversation_mode
         
         st.rerun()
     
@@ -333,6 +345,7 @@ def main():
             if st.session_state.conversation_active:
                 client = st.session_state.client
                 advisor = st.session_state.advisor
+                is_automatic = st.session_state.conversation_mode == "🔄 Automatic"
                 
                 # Check if we need to start or continue
                 if st.session_state.current_turn == 0:
@@ -366,8 +379,41 @@ def main():
                     
                     st.rerun()
                 
-                # Continue conversation button
-                if not client.is_satisfied and st.session_state.current_turn < max_turns:
+                # AUTOMATIC MODE: Continue conversation automatically
+                if is_automatic and not client.is_satisfied and st.session_state.current_turn < max_turns:
+                    with st.spinner("Continuing conversation..."):
+                        last_advisor_msg = st.session_state.conversation[-1]["content"]
+                        client_reply = client.respond_to_advisor(last_advisor_msg)
+                    
+                    st.session_state.current_turn += 1
+                    turn = st.session_state.current_turn
+                    
+                    with conversation_container:
+                        display_message("client", client_reply, turn)
+                        st.session_state.conversation.append({
+                            "role": "client",
+                            "content": client_reply,
+                            "turn": turn
+                        })
+                        
+                        if not client.is_satisfied:
+                            with st.spinner("📊 Advisor consulting with Analyst..."):
+                                advisor_response = advisor.process_query(
+                                    client_reply,
+                                    client.get_profile_summary()
+                                )
+                            
+                            display_message("advisor", advisor_response, turn)
+                            st.session_state.conversation.append({
+                                "role": "advisor",
+                                "content": advisor_response,
+                                "turn": turn
+                            })
+                    
+                    st.rerun()
+                
+                # STEP-BY-STEP MODE: Show continue button
+                if not is_automatic and not client.is_satisfied and st.session_state.current_turn < max_turns:
                     if st.button("➡️ Continue Conversation", type="primary"):
                         with st.spinner("Client responding..."):
                             last_advisor_msg = st.session_state.conversation[-1]["content"]

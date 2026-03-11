@@ -220,6 +220,8 @@ SAMPLE_PROFILES = [
             {"symbol": "AAPL", "quantity": 50, "purchase_price": 150},
             {"symbol": "MSFT", "quantity": 30, "purchase_price": 280},
             {"symbol": "VTI", "quantity": 100, "purchase_price": 200},
+            {"symbol": "BND", "quantity": 75, "purchase_price": 80},
+            {"symbol": "VYM", "quantity": 40, "purchase_price": 105},
         ],
         investment_goals="Save for retirement and build long-term wealth"
     ),
@@ -230,7 +232,10 @@ SAMPLE_PROFILES = [
         portfolio=[
             {"symbol": "BND", "quantity": 200, "purchase_price": 75},
             {"symbol": "VYM", "quantity": 150, "purchase_price": 110},
-            {"symbol": "AAPL", "quantity": 25, "purchase_price": 140},
+            {"symbol": "SCHD", "quantity": 100, "purchase_price": 75},
+            {"symbol": "JNJ", "quantity": 40, "purchase_price": 160},
+            {"symbol": "PG", "quantity": 35, "purchase_price": 145},
+            {"symbol": "KO", "quantity": 50, "purchase_price": 58},
         ],
         investment_goals="Preserve capital and generate income for retirement in 7 years"
     ),
@@ -242,6 +247,7 @@ SAMPLE_PROFILES = [
             {"symbol": "NVDA", "quantity": 40, "purchase_price": 450},
             {"symbol": "TSLA", "quantity": 30, "purchase_price": 250},
             {"symbol": "ARKK", "quantity": 100, "purchase_price": 45},
+            {"symbol": "AMD", "quantity": 60, "purchase_price": 120},
         ],
         investment_goals="Maximize growth over the next 20+ years"
     ),
@@ -266,31 +272,36 @@ def generate_random_profile(model: str = "gpt-4o-mini") -> ClientProfile:
         "SCHD", "ARKK", "ARKG", "VNQ", "GLD", "TLT", "IWM", "DIA"
     ]
     
-    prompt = """Generate a realistic financial advisory client profile. Be creative and diverse.
+    # Randomly decide number of holdings for this profile
+    num_holdings = random.randint(3, 6)
+    
+    prompt = f"""Generate a realistic financial advisory client profile. Be creative and diverse.
 
 Return ONLY a valid JSON object with this exact structure (no markdown, no explanation):
-{
+{{
     "name": "Full Name",
     "age": <number between 22 and 75>,
     "risk_tolerance": "<conservative OR moderate OR aggressive>",
     "portfolio": [
-        {"symbol": "<stock ticker>", "quantity": <number>, "purchase_price": <number>},
-        {"symbol": "<stock ticker>", "quantity": <number>, "purchase_price": <number>},
-        {"symbol": "<stock ticker>", "quantity": <number>, "purchase_price": <number>}
+        // Generate EXACTLY {num_holdings} holdings
+        {{"symbol": "<stock ticker>", "quantity": <number>, "purchase_price": <number>}},
+        ... // {num_holdings} total holdings
     ],
     "investment_goals": "<specific investment goals based on age and situation>"
-}
+}}
 
 Guidelines:
-- Create diverse names representing different backgrounds
+- Create diverse names representing different backgrounds (various ethnicities, genders)
 - Age should influence risk tolerance and goals realistically
-- Conservative clients: prefer bonds (BND, AGG), dividend stocks (VYM, SCHD), stable companies
-- Moderate clients: balanced mix of growth and stability (VTI, VOO, blue chips)
-- Aggressive clients: growth stocks (NVDA, TSLA, ARKK), tech-heavy portfolios
-- Portfolio should have 2-5 holdings with realistic quantities (10-500 shares)
-- Goals should be specific and match age/risk profile
+- Conservative clients: prefer bonds (BND, AGG, TLT), dividend stocks (VYM, SCHD, VIG), stable companies (JNJ, PG, KO)
+- Moderate clients: balanced mix of growth and stability (VTI, VOO, SPY, blue chips like AAPL, MSFT, JPM)
+- Aggressive clients: growth stocks (NVDA, TSLA, AMD, META), tech ETFs (QQQ, ARKK, ARKG)
+- Portfolio MUST have EXACTLY {num_holdings} different holdings
+- Use realistic quantities: 10-500 shares for stocks, 50-300 for ETFs
+- Purchase prices should be realistic for recent years
+- Goals should be specific and match age/risk profile (retirement, home purchase, education, wealth building)
 
-Return ONLY the JSON object."""
+Return ONLY the JSON object with exactly {num_holdings} holdings."""
 
     messages = [
         SystemMessage(content="You are a data generator. Output only valid JSON, nothing else."),
