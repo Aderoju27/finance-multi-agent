@@ -116,35 +116,46 @@ Respond with just the question, nothing else."""
         """
         self.conversation_history.append({"role": "advisor", "content": advisor_response})
         
+        # Count conversation turns (each client message is a turn)
+        turn_count = len([m for m in self.conversation_history if m["role"] == "client"])
+        
         # Build conversation context
         conv_text = "\n".join([
             f"{'Client' if turn['role'] == 'client' else 'Advisor'}: {turn['content']}"
             for turn in self.conversation_history
         ])
         
+        # Adjust behavior based on conversation progress
+        if turn_count <= 1:
+            turn_guidance = """This is early in the conversation. You likely have follow-up questions about:
+- Specific investment recommendations or fund names
+- How to implement the advice practically
+- Potential risks or downsides
+- Timeline or next steps
+
+Ask a thoughtful follow-up question to dig deeper."""
+        elif turn_count == 2:
+            turn_guidance = """You've had a couple exchanges. Consider whether:
+- You have one more clarifying question, OR
+- The advisor has given you enough actionable information to feel satisfied
+
+If you have lingering concerns, ask them. If you feel informed, express satisfaction."""
+        else:
+            turn_guidance = """You've had several exchanges and received detailed advice. 
+Unless you have a genuinely new concern, it's natural to express satisfaction and thank the advisor.
+Say something like "That answers all my questions, thank you for the thorough explanation!" """
+        
         prompt = f"""The conversation so far:
 {conv_text}
 
-Based on the advisor's response, respond naturally as this client would.
-
-IMPORTANT: You are a curious client who wants to fully understand your financial situation.
-- Ask 2-3 follow-up questions before being satisfied
-- Dig deeper into specific recommendations
-- Ask about risks, alternatives, or implementation details
-- Only express full satisfaction after getting comprehensive answers
-
-If this is your first or second response, you likely have more questions about:
-- Specific investment recommendations
-- How to implement the advice
-- Potential risks or downsides
-- Timeline or next steps
+Turn {turn_count + 1} - {turn_guidance}
 
 Remember your profile:
 - Age: {self.profile.age}
 - Risk tolerance: {self.profile.risk_tolerance}
 - Goals: {self.profile.investment_goals}
 
-Respond naturally. If asking a follow-up, do NOT say "thank you, that answers my question" - just ask the question."""
+Respond naturally as this client. Either ask a genuine follow-up OR express clear satisfaction."""
 
         messages = [
             SystemMessage(content=self._get_system_prompt()),
@@ -156,7 +167,7 @@ Respond naturally. If asking a follow-up, do NOT say "thank you, that answers my
         
         self.conversation_history.append({"role": "client", "content": reply})
         
-        # Detect resolution - only trigger on clear endings without follow-up questions
+        # Detect resolution
         reply_lower = reply.lower()
         
         # Check if reply contains a question (likely a follow-up)
@@ -167,14 +178,16 @@ Respond naturally. If asking a follow-up, do NOT say "thank you, that answers my
             "tell me more", "explain", "elaborate", "wondering"
         ])
         
-        # Only mark satisfied if expressing gratitude WITHOUT asking more questions
+        # Satisfaction indicators - be more inclusive
         satisfaction_indicators = [
-            "that answers my question", "that's all i needed", 
-            "i have no more questions", "that's very helpful, thank you",
-            "i feel much better", "i'm satisfied", "nothing else",
-            "that covers everything", "i think i understand now"
+            "thank you", "thanks", "that answers", "that's all",
+            "i have no more questions", "very helpful", "great advice",
+            "i feel", "i'm satisfied", "nothing else", "covers everything",
+            "i understand", "makes sense", "i appreciate", "helpful",
+            "i'll do that", "i'll consider", "i'll look into"
         ]
         
+        # Mark satisfied if showing gratitude without asking more questions
         is_satisfied = (
             any(indicator in reply_lower for indicator in satisfaction_indicators)
             and not has_question
