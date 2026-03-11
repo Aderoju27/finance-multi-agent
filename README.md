@@ -95,9 +95,42 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your OPENAI_API_KEY and ALPHA_VANTAGE_API_KEY
 
-# Run the system
+# Run the system (CLI)
 python src/main.py
+
+# Or run with Streamlit UI
+streamlit run app.py
 ```
+
+## Usage Options
+
+### Command Line Interface
+
+```bash
+# Use preset profile
+python src/main.py --profile 0  # Sarah Chen (moderate risk)
+python src/main.py --profile 1  # Robert Martinez (conservative)
+python src/main.py --profile 2  # Alex Thompson (aggressive)
+
+# Generate random client profile
+python src/main.py --random
+
+# Adjust conversation length
+python src/main.py --max-turns 10
+```
+
+### Streamlit Web UI
+
+```bash
+streamlit run app.py
+```
+
+Features:
+- 🎲 Random or preset client profile selection
+- 📊 Portfolio visualization with interactive charts
+- 💬 Real-time conversation display with agent labels
+- ⚙️ Configurable settings (max turns)
+- 📈 Live conversation stats
 
 ### Command Line Options
 

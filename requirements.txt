@@ -18,3 +18,7 @@ pydantic>=2.0.0
 # RAG (for knowledge store)
 chromadb>=0.4.0
 langchain-chroma>=0.1.0
+
+# UI
+streamlit>=1.30.0
+plotly>=5.18.0
