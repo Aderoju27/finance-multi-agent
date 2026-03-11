@@ -1,7 +1,5 @@
 # Multi-Agent Financial Advisory System
 
-**JP Morgan Chase - Technical Assessment**
-
 A multi-agent system where agents collaborate to provide financial investment guidance to a client.
 
 ## Overview

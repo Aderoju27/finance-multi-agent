@@ -7,6 +7,7 @@ when they are satisfied (conversation resolution).
 """
 
 import json
+import random
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
@@ -193,6 +194,81 @@ SAMPLE_PROFILES = [
         investment_goals="Maximize growth over the next 20+ years"
     ),
 ]
+
+
+def generate_random_profile(model: str = "gpt-4o-mini") -> ClientProfile:
+    """
+    Use LLM to generate a random, realistic client profile.
+    
+    Returns:
+        A randomly generated ClientProfile
+    """
+    llm = ChatOpenAI(model=model, temperature=1.0)
+    
+    # Common stock symbols for variety
+    stock_symbols = [
+        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA", "BRK.B",
+        "JPM", "V", "JNJ", "WMT", "PG", "MA", "HD", "CVX", "MRK", "ABBV",
+        "PFE", "KO", "PEP", "COST", "TMO", "AVGO", "MCD", "CSCO", "ACN",
+        "VTI", "VOO", "SPY", "QQQ", "VEA", "VWO", "BND", "AGG", "VYM",
+        "SCHD", "ARKK", "ARKG", "VNQ", "GLD", "TLT", "IWM", "DIA"
+    ]
+    
+    prompt = """Generate a realistic financial advisory client profile. Be creative and diverse.
+
+Return ONLY a valid JSON object with this exact structure (no markdown, no explanation):
+{
+    "name": "Full Name",
+    "age": <number between 22 and 75>,
+    "risk_tolerance": "<conservative OR moderate OR aggressive>",
+    "portfolio": [
+        {"symbol": "<stock ticker>", "quantity": <number>, "purchase_price": <number>},
+        {"symbol": "<stock ticker>", "quantity": <number>, "purchase_price": <number>},
+        {"symbol": "<stock ticker>", "quantity": <number>, "purchase_price": <number>}
+    ],
+    "investment_goals": "<specific investment goals based on age and situation>"
+}
+
+Guidelines:
+- Create diverse names representing different backgrounds
+- Age should influence risk tolerance and goals realistically
+- Conservative clients: prefer bonds (BND, AGG), dividend stocks (VYM, SCHD), stable companies
+- Moderate clients: balanced mix of growth and stability (VTI, VOO, blue chips)
+- Aggressive clients: growth stocks (NVDA, TSLA, ARKK), tech-heavy portfolios
+- Portfolio should have 2-5 holdings with realistic quantities (10-500 shares)
+- Goals should be specific and match age/risk profile
+
+Return ONLY the JSON object."""
+
+    messages = [
+        SystemMessage(content="You are a data generator. Output only valid JSON, nothing else."),
+        HumanMessage(content=prompt)
+    ]
+    
+    try:
+        response = llm.invoke(messages)
+        content = response.content.strip()
+        
+        # Clean up response if it has markdown code blocks
+        if content.startswith("```"):
+            content = content.split("```")[1]
+            if content.startswith("json"):
+                content = content[4:]
+            content = content.strip()
+        
+        data = json.loads(content)
+        
+        return ClientProfile(
+            name=data["name"],
+            age=data["age"],
+            risk_tolerance=data["risk_tolerance"],
+            portfolio=data["portfolio"],
+            investment_goals=data.get("investment_goals")
+        )
+    except Exception as e:
+        print(f"Warning: Failed to generate random profile ({e}), using fallback")
+        # Fallback to a randomly selected sample profile
+        return random.choice(SAMPLE_PROFILES)
 
 
 if __name__ == "__main__":

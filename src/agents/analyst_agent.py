@@ -26,9 +26,9 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_chroma import Chroma
 
-# Load environment variables
+# Load environment variables (override any existing to pick up .env changes)
 env_path = Path(__file__).parent.parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
+load_dotenv(dotenv_path=env_path, override=True)
 
 ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -362,13 +362,14 @@ class AnalystAgent:
         market_summary = "No market data available."
         if analysis_results["market_data"] and analysis_results["market_data"].get("status") == "success":
             md = analysis_results["market_data"]
+            beta_str = f"{md['beta']:.2f}" if md['beta'] else 'N/A'
             market_summary = f"""
 Portfolio Analysis:
 - Total Value: ${md['total_value']:,.2f}
 - Annual Volatility: {md['volatility']*100:.1f}%
 - Total Return: {md['total_return']*100:.1f}%
 - Max Drawdown: {md['max_drawdown']*100:.1f}%
-- Beta vs {md['benchmark']}: {md['beta']:.2f if md['beta'] else 'N/A'}
+- Beta vs {md['benchmark']}: {beta_str}
 - Risk Flags: {', '.join(md['risk_flags']) if md['risk_flags'] else 'None'}
 
 Position Details:

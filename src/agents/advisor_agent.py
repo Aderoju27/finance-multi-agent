@@ -115,12 +115,13 @@ Please analyze their portfolio and provide relevant information."""
         # Build context for LLM
         data_context = ""
         if market_data and market_data.get("status") == "success":
+            beta_str = f"{market_data['beta']:.2f}" if market_data['beta'] else 'N/A'
             data_context = f"""
 Key Portfolio Metrics:
 - Total Value: ${market_data['total_value']:,.2f}
 - Volatility: {market_data['volatility']*100:.1f}%
 - Max Drawdown: {market_data['max_drawdown']*100:.1f}%
-- Beta: {market_data['beta']:.2f if market_data['beta'] else 'N/A'}
+- Beta: {beta_str}
 - Risk Flags: {', '.join(market_data['risk_flags']) if market_data['risk_flags'] else 'None'}
 """
         

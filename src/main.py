@@ -28,7 +28,11 @@ sys.path.insert(0, str(project_root))
 
 from dotenv import load_dotenv
 
-from src.agents.client_agent import ClientAgent, ClientProfile, SAMPLE_PROFILES
+# Load environment variables BEFORE importing agents (they read env vars at import time)
+env_path = project_root / ".env"
+load_dotenv(dotenv_path=env_path, override=True)
+
+from src.agents.client_agent import ClientAgent, ClientProfile, SAMPLE_PROFILES, generate_random_profile
 from src.agents.advisor_agent import AdvisorAgent
 
 
@@ -148,14 +152,15 @@ def main():
         action="store_true",
         help="Suppress real-time output"
     )
+    parser.add_argument(
+        "--random",
+        action="store_true",
+        help="Generate a random client profile using LLM"
+    )
     
     args = parser.parse_args()
     
-    # Load environment variables
-    env_path = project_root / ".env"
-    load_dotenv(dotenv_path=env_path)
-    
-    # Verify API keys
+    # Verify API keys (already loaded at module level)
     if not os.getenv("OPENAI_API_KEY"):
         print("ERROR: OPENAI_API_KEY not set in environment")
         print("Please copy .env.example to .env and add your API keys")
@@ -165,7 +170,11 @@ def main():
         print("WARNING: ALPHA_VANTAGE_API_KEY not set - market data will be unavailable")
     
     # Select client profile
-    profile = SAMPLE_PROFILES[args.profile]
+    if args.random:
+        print("Generating random client profile...")
+        profile = generate_random_profile()
+    else:
+        profile = SAMPLE_PROFILES[args.profile]
     
     # Run conversation
     result = run_conversation(
