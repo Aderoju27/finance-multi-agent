@@ -66,8 +66,18 @@ Stay in character as this client. You are seeking financial guidance from an adv
 Be natural and conversational. Ask questions that someone with your profile would ask.
 Express concerns appropriate to your risk tolerance level.
 
-When you feel your question has been adequately answered, express satisfaction 
-by saying something like "Thank you, that answers my question" or "That makes sense, I appreciate the advice."
+IMPORTANT BEHAVIOR:
+- You are a thorough client who likes to understand things fully before making decisions
+- Don't be satisfied with the first answer - ask follow-up questions to dig deeper
+- Ask about specific recommendations, risks, implementation steps, or alternatives
+- After 2-3 exchanges with good detailed answers, you can express satisfaction
+
+Only express FINAL satisfaction (ending the conversation) when you have:
+1. Received specific, actionable advice
+2. Understood the risks and tradeoffs
+3. Have a clear next step or plan
+
+When truly satisfied, say something definitive like "That answers all my questions, thank you!"
 """
     
     def generate_initial_question(self) -> str:
@@ -115,16 +125,26 @@ Respond with just the question, nothing else."""
         prompt = f"""The conversation so far:
 {conv_text}
 
-Based on the advisor's response, do ONE of the following:
-1. If you need clarification or have a follow-up question, ask it naturally
-2. If your questions have been adequately answered, express satisfaction and thank the advisor
+Based on the advisor's response, respond naturally as this client would.
+
+IMPORTANT: You are a curious client who wants to fully understand your financial situation.
+- Ask 2-3 follow-up questions before being satisfied
+- Dig deeper into specific recommendations
+- Ask about risks, alternatives, or implementation details
+- Only express full satisfaction after getting comprehensive answers
+
+If this is your first or second response, you likely have more questions about:
+- Specific investment recommendations
+- How to implement the advice
+- Potential risks or downsides
+- Timeline or next steps
 
 Remember your profile:
 - Age: {self.profile.age}
 - Risk tolerance: {self.profile.risk_tolerance}
-- You're a real person seeking advice, not a test
+- Goals: {self.profile.investment_goals}
 
-Respond naturally as this client would."""
+Respond naturally. If asking a follow-up, do NOT say "thank you, that answers my question" - just ask the question."""
 
         messages = [
             SystemMessage(content=self._get_system_prompt()),
@@ -136,13 +156,32 @@ Respond naturally as this client would."""
         
         self.conversation_history.append({"role": "client", "content": reply})
         
-        # Detect resolution
+        # Detect resolution - only trigger on clear endings without follow-up questions
+        reply_lower = reply.lower()
+        
+        # Check if reply contains a question (likely a follow-up)
+        has_question = "?" in reply
+        has_followup_phrases = any(phrase in reply_lower for phrase in [
+            "can you", "could you", "what about", "how do", "how should",
+            "what would", "should i", "do you recommend", "what if",
+            "tell me more", "explain", "elaborate", "wondering"
+        ])
+        
+        # Only mark satisfied if expressing gratitude WITHOUT asking more questions
         satisfaction_indicators = [
-            "thank you", "thanks", "that answers", "makes sense", 
-            "appreciate", "helpful", "got it", "understand now",
-            "that's helpful", "great advice", "i'll do that"
+            "that answers my question", "that's all i needed", 
+            "i have no more questions", "that's very helpful, thank you",
+            "i feel much better", "i'm satisfied", "nothing else",
+            "that covers everything", "i think i understand now"
         ]
-        if any(indicator in reply.lower() for indicator in satisfaction_indicators):
+        
+        is_satisfied = (
+            any(indicator in reply_lower for indicator in satisfaction_indicators)
+            and not has_question
+            and not has_followup_phrases
+        )
+        
+        if is_satisfied:
             self.is_satisfied = True
         
         return reply
