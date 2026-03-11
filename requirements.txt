@@ -1,0 +1,20 @@
+# Core
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langgraph>=0.0.20
+openai>=1.0.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Market data
+alpha-vantage>=2.3.1
+
+# Environment
+python-dotenv>=1.0.0
+pydantic>=2.0.0
+
+# RAG (for knowledge store)
+chromadb>=0.4.0
+langchain-chroma>=0.1.0
